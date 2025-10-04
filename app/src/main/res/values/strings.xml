@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Daxido</string>
+    <string name="app_tagline">Your Premium Ride Partner</string>
+
+    <!-- Auth Strings -->
+    <string name="welcome_back">Welcome Back!</string>
+    <string name="login_to_continue">Login to continue your journey</string>
+    <string name="send_otp">Send OTP</string>
+    <string name="verify_otp">Verify OTP</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="enter_otp">Enter OTP</string>
+    <string name="resend_otp">Resend OTP</string>
+
+    <!-- Navigation -->
+    <string name="home">Home</string>
+    <string name="rides">Rides</string>
+    <string name="wallet">Wallet</string>
+    <string name="profile">Profile</string>
+
+    <!-- Ride States -->
+    <string name="searching_driver">Searching for driver...</string>
+    <string name="driver_assigned">Driver Assigned</string>
+    <string name="driver_arrived">Driver Arrived</string>
+    <string name="trip_started">Trip Started</string>
+    <string name="trip_completed">Trip Completed</string>
+
+    <!-- Vehicle Types -->
+    <string name="bike">Bike</string>
+    <string name="auto">Auto</string>
+    <string name="car">Car</string>
+    <string name="premium">Premium</string>
+
+    <!-- Driver -->
+    <string name="go_online">Go Online</string>
+    <string name="go_offline">Go Offline</string>
+    <string name="todays_earnings">Today\'s Earnings</string>
+    <string name="total_trips">Total Trips</string>
+    <string name="accept_ride">Accept Ride</string>
+    <string name="reject_ride">Reject Ride</string>
+
+    <!-- Common -->
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="done">Done</string>
+    <string name="save">Save</string>
+    <string name="loading">Loading...</string>
+    <string name="error">Error</string>
+    <string name="retry">Retry</string>
+</resources>

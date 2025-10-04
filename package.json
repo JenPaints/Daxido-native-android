@@ -1,0 +1,33 @@
+{
+  "name": "daxido-testing-suite",
+  "version": "1.0.0",
+  "description": "Comprehensive testing suite for Daxido ride-hailing platform",
+  "main": "index.js",
+  "scripts": {
+    "test:data": "node test-data-setup.js",
+    "test:payment": "node payment-flow-test.js",
+    "test:performance": "node performance-test.js",
+    "test:all": "npm run test:data && npm run test:payment && npm run test:performance",
+    "deploy:functions": "cd functions && firebase deploy --only functions",
+    "deploy:rules": "firebase deploy --only firestore:rules,database,storage",
+    "build:android": "./gradlew clean assembleDebug",
+    "test:android": "./gradlew test",
+    "verify:deployment": "node verify-deployment.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.11.1",
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "firebase-tools": "^12.9.1"
+  },
+  "keywords": [
+    "testing",
+    "firebase",
+    "ride-hailing",
+    "performance",
+    "load-testing"
+  ],
+  "author": "Daxido Team",
+  "license": "MIT"
+}

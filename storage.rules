@@ -1,0 +1,103 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDriver(driverId) {
+      return isAuthenticated() && request.auth.uid == driverId;
+    }
+
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isValidDocumentType() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('application/pdf');
+    }
+
+    match /users/{userId}/profile/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) &&
+                      isValidImageType() &&
+                      request.resource.size < 5 * 1024 * 1024;
+    }
+
+    match /users/{userId}/documents/{document} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) &&
+                      isValidDocumentType() &&
+                      request.resource.size < 10 * 1024 * 1024;
+    }
+
+    match /drivers/{driverId}/profile/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isDriver(driverId) &&
+                      isValidImageType() &&
+                      request.resource.size < 5 * 1024 * 1024;
+    }
+
+    match /drivers/{driverId}/documents/{documentType}/{filename} {
+      allow read: if isDriver(driverId);
+      allow write: if isDriver(driverId) &&
+                      isValidDocumentType() &&
+                      request.resource.size < 10 * 1024 * 1024;
+    }
+
+    match /drivers/{driverId}/vehicle/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isDriver(driverId) &&
+                      isValidImageType() &&
+                      request.resource.size < 5 * 1024 * 1024;
+    }
+
+    match /rides/{rideId}/images/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() &&
+                      isValidImageType() &&
+                      request.resource.size < 5 * 1024 * 1024;
+    }
+
+    match /support/{ticketId}/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() &&
+                      (isValidImageType() || isValidDocumentType()) &&
+                      request.resource.size < 10 * 1024 * 1024;
+    }
+
+    match /sos/{alertId}/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() &&
+                      isValidImageType() &&
+                      request.resource.size < 5 * 1024 * 1024;
+    }
+
+    match /chat/{chatRoomId}/media/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() &&
+                      (isValidImageType() ||
+                       request.resource.contentType.matches('audio/.*') ||
+                       request.resource.contentType.matches('video/.*')) &&
+                      request.resource.size < 20 * 1024 * 1024;
+    }
+
+    match /temp/{userId}/{filename} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) &&
+                      request.resource.size < 10 * 1024 * 1024;
+      allow delete: if isOwner(userId);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

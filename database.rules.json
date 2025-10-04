@@ -1,0 +1,204 @@
+{
+  "rules": {
+    "drivers": {
+      "$driverId": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $driverId",
+        ".indexOn": ["isAvailable", "vehicleType", "rating", "lastSeen"],
+        "currentLocation": {
+          ".validate": "newData.hasChildren(['latitude', 'longitude', 'timestamp'])"
+        }
+      }
+    },
+
+    "driver_locations": {
+      "$driverId": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $driverId",
+        ".validate": "newData.hasChildren(['latitude', 'longitude', 'timestamp'])"
+      }
+    },
+
+    "drivers_available": {
+      "$driverId": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $driverId",
+        ".indexOn": ["isAvailable"]
+      }
+    },
+
+    "active_rides": {
+      "$rideId": {
+        ".read": "auth != null && (data.child('userId').val() == auth.uid || data.child('driverId').val() == auth.uid)",
+        ".write": "auth != null && (data.child('userId').val() == auth.uid || data.child('driverId').val() == auth.uid || !data.exists())",
+        "driver_location": {
+          ".read": "auth != null",
+          ".write": "auth != null",
+          ".validate": "newData.hasChildren(['latitude', 'longitude'])"
+        },
+        "drop_location": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "current_polyline": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "metrics": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "sosTriggered": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "status": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "driverId": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        }
+      }
+    },
+
+    "rides": {
+      "$rideId": {
+        ".read": "auth != null && (data.child('userId').val() == auth.uid || data.child('driverId').val() == auth.uid)",
+        ".write": "auth != null",
+        "driver_location": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "user_location": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        }
+      }
+    },
+
+    "ride_requests": {
+      "$rideId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".indexOn": ["userId", "status", "requestedAt", "vehicleType"]
+      }
+    },
+
+    "ride_acceptances": {
+      "$rideId": {
+        "$driverId": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid == $driverId"
+        }
+      }
+    },
+
+    "driver_notifications": {
+      "$driverId": {
+        ".read": "auth != null && auth.uid == $driverId",
+        ".write": "auth != null"
+      }
+    },
+
+    "sos_alerts": {
+      "$rideId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['rideId', 'userId', 'timestamp', 'location'])"
+      }
+    },
+
+    "fcm_queue": {
+      ".read": false,
+      ".write": false
+    },
+
+    "ride_notifications": {
+      "$rideId": {
+        ".read": "auth != null",
+        ".write": false
+      }
+    },
+
+    "driver_responses": {
+      "$rideId": {
+        "$driverId": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid == $driverId"
+        }
+      }
+    },
+
+    "zones": {
+      "$zoneId": {
+        ".read": "auth != null",
+        ".write": false
+      }
+    },
+
+    "emergencies": {
+      "$emergencyId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    "analytics": {
+      ".read": "auth != null",
+      ".write": false
+    },
+
+    "metrics": {
+      ".read": "auth != null",
+      ".write": false
+    },
+
+    "live_chat": {
+      "$chatRoomId": {
+        ".read": "auth != null && (data.child('userId').val() == auth.uid || data.child('driverId').val() == auth.uid)",
+        ".write": "auth != null && (data.child('userId').val() == auth.uid || data.child('driverId').val() == auth.uid || !data.exists())",
+        "messages": {
+          "$messageId": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+          }
+        }
+      }
+    },
+
+    "presence": {
+      "$userId": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $userId"
+      }
+    },
+
+    "ride_pools": {
+      "$poolId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    "driver_zones": {
+      "$zoneId": {
+        "$driverId": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid == $driverId"
+        }
+      }
+    },
+
+    "system_status": {
+      ".read": "auth != null",
+      ".write": false
+    },
+
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

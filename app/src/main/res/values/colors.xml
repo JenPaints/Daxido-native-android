@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Daxido Brand Colors -->
+    <color name="daxido_gold">#F4C430</color>
+    <color name="daxido_light_gold">#F9D71C</color>
+    <color name="daxido_pale_gold">#FDF4D3</color>
+    <color name="daxido_dark_brown">#4A2C2A</color>
+    <color name="daxido_medium_brown">#6B4423</color>
+    <color name="daxido_dark_gray">#333333</color>
+    <color name="daxido_light_gray">#F8F8F8</color>
+
+    <!-- System Colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+
+    <!-- Semantic Colors -->
+    <color name="success">#4CAF50</color>
+    <color name="error">#E91E63</color>
+    <color name="warning">#FF9800</color>
+    <color name="info">#2196F3</color>
+
+    <!-- Status Colors -->
+    <color name="status_online">#4CAF50</color>
+    <color name="status_offline">#9E9E9E</color>
+    <color name="status_busy">#FF9800</color>
+
+    <!-- Vehicle Type Colors -->
+    <color name="bike_color">#4CAF50</color>
+    <color name="auto_color">#FFEB3B</color>
+    <color name="car_color">#2196F3</color>
+    <color name="premium_color">#9C27B0</color>
+</resources>

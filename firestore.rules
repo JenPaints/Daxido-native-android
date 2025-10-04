@@ -1,0 +1,388 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================================================
+    // HELPER FUNCTIONS
+    // ============================================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDriver(driverId) {
+      return isAuthenticated() && request.auth.uid == driverId;
+    }
+
+    function isRideParticipant(rideData) {
+      return isAuthenticated() &&
+             (request.auth.uid == rideData.userId ||
+              request.auth.uid == rideData.driverId);
+    }
+
+    // ============================================================================
+    // USERS COLLECTION
+    // ============================================================================
+
+    match /users/{userId} {
+      // Users can read their own profile, drivers can read user profiles during rides
+      allow read: if isAuthenticated();
+
+      // Users can only write their own data
+      allow create: if isOwner(userId) &&
+                       request.resource.data.id == userId;
+
+      allow update: if isOwner(userId) &&
+                       request.resource.data.id == userId;
+
+      allow delete: if isOwner(userId);
+
+      // User's payment methods subcollection
+      match /paymentMethods/{methodId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // User's favorite drivers
+      match /favoriteDrivers/{favoriteId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // User's emergency contacts
+      match /emergencyContacts/{contactId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // User's recent locations
+      match /recentLocations/{locationId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ============================================================================
+    // DRIVERS COLLECTION
+    // ============================================================================
+
+    match /drivers/{driverId} {
+      // Anyone can read driver profiles (for matching)
+      allow read: if isAuthenticated();
+
+      // Only the driver can write their own data
+      allow create: if isDriver(driverId) &&
+                       request.resource.data.id == driverId;
+
+      allow update: if isDriver(driverId);
+
+      allow delete: if isDriver(driverId);
+
+      // Driver documents subcollection
+      match /documents/{documentId} {
+        allow read, write: if isDriver(driverId);
+      }
+
+      // Driver earnings
+      match /earnings/{earningId} {
+        allow read: if isDriver(driverId);
+        allow write: if false; // Only cloud functions can write
+      }
+
+      // Driver ratings
+      match /ratings/{ratingId} {
+        allow read: if isDriver(driverId);
+        allow create: if isAuthenticated();
+        allow update, delete: if false; // Immutable after creation
+      }
+    }
+
+    // ============================================================================
+    // RIDES COLLECTION
+    // ============================================================================
+
+    match /rides/{rideId} {
+      // Read: Users and drivers involved in the ride
+      allow read: if isAuthenticated() &&
+                     (request.auth.uid == resource.data.userId ||
+                      request.auth.uid == resource.data.driverId);
+
+      // Create: Only authenticated users can create rides
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.status == 'SEARCHING';
+
+      // Update: Both user and driver can update
+      allow update: if isAuthenticated() &&
+                       (request.auth.uid == resource.data.userId ||
+                        request.auth.uid == resource.data.driverId);
+
+      // Delete: No one can delete rides
+      allow delete: if false;
+    }
+
+    // ============================================================================
+    // WALLETS COLLECTION
+    // ============================================================================
+
+    match /wallets/{userId} {
+      // Users can read their own wallet
+      allow read: if isOwner(userId);
+
+      // Users can create their own wallet
+      allow create: if isOwner(userId) &&
+                       request.resource.data.keys().hasOnly(['balance', 'lastUpdated']);
+
+      // Users can update their wallet (for adding money)
+      allow update: if isOwner(userId) &&
+                       request.resource.data.balance >= 0;
+
+      // No deletion
+      allow delete: if false;
+    }
+
+    // ============================================================================
+    // TRANSACTIONS COLLECTION
+    // ============================================================================
+
+    match /transactions/{transactionId} {
+      // Users can read their own transactions
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // Users can create transactions
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.transactionId == transactionId;
+
+      // No updates or deletes (immutable ledger)
+      allow update, delete: if false;
+    }
+
+    // ============================================================================
+    // NOTIFICATIONS COLLECTION
+    // ============================================================================
+
+    match /notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // Anyone can create notifications (usually cloud functions)
+      allow create: if isAuthenticated();
+
+      // Users can update their own notifications (mark as read)
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['isRead']);
+
+      // Users can delete their own notifications
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId;
+    }
+
+    // ============================================================================
+    // ACTIVE POOLS (Ride Pooling)
+    // ============================================================================
+
+    match /active_pools/{poolId} {
+      // Anyone authenticated can read pools (for matching)
+      allow read: if isAuthenticated();
+
+      // Users and drivers can create/update pools
+      allow create: if isAuthenticated();
+
+      allow update: if isAuthenticated() &&
+                       (request.resource.data.currentOccupancy <= request.resource.data.maxCapacity);
+
+      // Pools are deleted by cloud functions
+      allow delete: if false;
+    }
+
+    // ============================================================================
+    // PROMO CODES COLLECTION
+    // ============================================================================
+
+    match /promoCodes/{promoCode} {
+      // Anyone can read promo codes
+      allow read: if isAuthenticated();
+
+      // Only cloud functions/admin can write
+      allow write: if false;
+    }
+
+    match /userPromoUsage/{usageId} {
+      // Users can read their own promo usage
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // Create usage records when applying promo
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // No updates or deletes
+      allow update, delete: if false;
+    }
+
+    // ============================================================================
+    // LIVE CHAT COLLECTION
+    // ============================================================================
+
+    match /chats/{chatRoomId} {
+      // Participants can read the chat room
+      allow read: if isAuthenticated() &&
+                     (request.auth.uid == resource.data.userId ||
+                      request.auth.uid == resource.data.driverId);
+
+      // Users and drivers can create chat rooms
+      allow create: if isAuthenticated() &&
+                       (request.resource.data.userId == request.auth.uid ||
+                        request.resource.data.driverId == request.auth.uid);
+
+      // Participants can update chat room
+      allow update: if isAuthenticated() &&
+                       (request.auth.uid == resource.data.userId ||
+                        request.auth.uid == resource.data.driverId);
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Participants can read messages
+        allow read: if isAuthenticated();
+
+        // Participants can create messages
+        allow create: if isAuthenticated() &&
+                         request.resource.data.senderId == request.auth.uid;
+
+        // No updates or deletes (immutable chat)
+        allow update, delete: if false;
+      }
+    }
+
+    // ============================================================================
+    // SUPPORT & FAQs
+    // ============================================================================
+
+    match /faqs/{faqId} {
+      // Anyone can read FAQs
+      allow read: if isAuthenticated();
+
+      // Only admin can write
+      allow write: if false;
+    }
+
+    match /support_tickets/{ticketId} {
+      // Users can read their own tickets
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // Users can create tickets
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // Users can update their tickets
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId;
+
+      // No deletion
+      allow delete: if false;
+    }
+
+    match /livechats/{chatId} {
+      // Users can access their own live chats
+      allow read, write: if isAuthenticated() &&
+                            request.auth.uid == resource.data.userId;
+    }
+
+    // ============================================================================
+    // CONFIGURATION
+    // ============================================================================
+
+    match /config/{configId} {
+      // Anyone can read config
+      allow read: if isAuthenticated();
+
+      // Only admin/cloud functions can write
+      allow write: if false;
+    }
+
+    // ============================================================================
+    // FAVORITE DRIVERS
+    // ============================================================================
+
+    match /favoriteDrivers/{favoriteId} {
+      // Users can read their own favorites
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // Users can manage their favorites
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId;
+
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId;
+    }
+
+    // ============================================================================
+    // VEHICLE MAINTENANCE (Driver)
+    // ============================================================================
+
+    match /vehicleMaintenance/{maintenanceId} {
+      // Drivers can read their own maintenance records
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.driverId;
+
+      // Drivers can create maintenance records
+      allow create: if isAuthenticated() &&
+                       request.resource.data.driverId == request.auth.uid;
+
+      // Drivers can update their records
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == resource.data.driverId;
+
+      // Drivers can delete their records
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.driverId;
+    }
+
+    // ============================================================================
+    // FCM QUEUE (Push Notifications)
+    // ============================================================================
+
+    match /fcm_queue/{queueId} {
+      // No direct read access
+      allow read: if false;
+
+      // Only cloud functions can write
+      allow write: if false;
+    }
+
+    // ============================================================================
+    // ANALYTICS & METRICS (Read-only for users)
+    // ============================================================================
+
+    match /analytics/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only cloud functions
+    }
+
+    match /metrics/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only cloud functions
+    }
+
+    // ============================================================================
+    // DEFAULT DENY ALL UNLISTED COLLECTIONS
+    // ============================================================================
+
+    // Explicitly deny access to any other collections not listed above
+    // This is a security best practice
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
